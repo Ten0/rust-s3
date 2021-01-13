@@ -226,16 +226,16 @@ impl Credentials {
     }
 
     pub fn from_instance_metadata() -> Result<Credentials> {
-        if !Credentials::is_ec2() {
+        if !dbg!(Credentials::is_ec2()) {
             return Err(anyhow!("Not an EC2 instance"));
         }
         let mut resp: HashMap<String, String> =
             match env::var("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI") {
-                Ok(credentials_path) => Some(
+                Ok(credentials_path) => {
                     attohttpc::get(&format!("http://169.254.170.2{}", credentials_path))
                         .send()?
-                        .json()?,
-                ),
+                        .json()?
+                }
                 Err(_) => {
                     let role = attohttpc::get(
                         "http://169.254.169.254/latest/meta-data/iam/security-credentials",
@@ -250,10 +250,10 @@ impl Credentials {
                     .send()?
                     .json()?;
 
-                    Some(creds)
+                    creds
                 }
-            }
-            .unwrap();
+            };
+        dbg!(&resp);
 
         Ok(Credentials {
             access_key: resp.remove("AccessKeyId"),
